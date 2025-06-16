@@ -34,6 +34,7 @@
 #define CFG_TUH_BTH_TX_EPSIZE 64
 
 typedef struct {
+	uint8_t hwid;
 	uint8_t daddr;
 	uint8_t bInterfaceNumber;
 	uint8_t bInterfaceSubClass;
@@ -215,7 +216,7 @@ bool tuh_bth_can_send_now(uint8_t idx) {
 	bthh_interface_t * const p_bth = get_itf(idx);
 	TU_VERIFY(p_bth);
 //	return ! usbh_edpt_busy(p_bth->daddr, p_bth->stream.acl_out.ep_addr);
-	return tu_edpt_stream_write_available(&p_bth->stream.acl_out) == CFG_TUH_BTH_TX_BUFSIZE &&
+	return tu_edpt_stream_write_available(p_bth->daddr, &p_bth->stream.acl_out) == CFG_TUH_BTH_TX_BUFSIZE &&
 			! usbh_edpt_busy(p_bth->daddr, p_bth->stream.acl_out.ep_addr);
 }
 
@@ -274,13 +275,13 @@ bool bthh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t event, uint32
   TU_ASSERT(p_bth, false);
 
   if ( ep_addr == p_bth->stream.acl_out.ep_addr ) {
-	if ( 0 == tu_edpt_stream_write_xfer(&p_bth->stream.acl_out) ) {
+	if ( 0 == tu_edpt_stream_write_xfer(p_bth->hwid, &p_bth->stream.acl_out) ) {
 	  // If there is no data left, a ZLP should be sent if:
 	  // - xferred_bytes is multiple of EP Packet size and not zero
-	  tu_edpt_stream_write_zlp_if_needed(&p_bth->stream.acl_out, xferred_bytes);
+	  tu_edpt_stream_write_zlp_if_needed(p_bth->hwid, &p_bth->stream.acl_out, xferred_bytes);
 	}
 	// invoke tx complete callback to possibly refill tx fifo
-	if (tuh_bth_send_acl_cb && tu_edpt_stream_write_available(&p_bth->stream.acl_out) == CFG_TUH_BTH_TX_BUFSIZE) {
+	if (tuh_bth_send_acl_cb && tu_edpt_stream_write_available(p_bth->hwid, &p_bth->stream.acl_out) == CFG_TUH_BTH_TX_BUFSIZE) {
 		tuh_bth_send_acl_cb(idx);
 	}
   }
@@ -382,6 +383,8 @@ bool bthh_open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *it
 		  TU_VERIFY(p_bth);
 		  if (p_bth == NULL)
 			  return false;
+		  p_bth->hwid = rhport;
+		  p_bth->hwid = dev_addr;
 
 		  tusb_desc_endpoint_t const* ep_desc = (tusb_desc_endpoint_t const *) tu_desc_next(itf_desc);
 
@@ -399,7 +402,7 @@ bool bthh_open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *it
 			} else {
 				p_bth->stream.acl_out.ep_addr = ep_desc->bEndpointAddress;
 				TU_ASSERT(tuh_edpt_open(dev_addr, ep_desc));
-			    tu_edpt_stream_open(&p_bth->stream.acl_out, p_bth->daddr, ep_desc);
+			    tu_edpt_stream_open(&p_bth->stream.acl_out, ep_desc);
 			}
 
 		    ep_desc = (tusb_desc_endpoint_t const*) tu_desc_next(ep_desc);
@@ -447,7 +450,7 @@ bool tuh_bth_send_acl(uint8_t idx, const uint8_t* packet, uint16_t len, tuh_xfer
   TU_VERIFY(p_bth);
 
   TU_ASSERT(! usbh_edpt_busy(p_bth->daddr, p_bth->stream.acl_out.ep_addr), false);
-  return tu_edpt_stream_write(&p_bth->stream.acl_out, packet, len) != 0 && tu_edpt_stream_write_xfer(&p_bth->stream.acl_out) != 0;
+  return tu_edpt_stream_write(p_bth->hwid, &p_bth->stream.acl_out, packet, len) != 0 && tu_edpt_stream_write_xfer(p_bth->hwid, &p_bth->stream.acl_out) != 0;
 //  while (usbh_edpt_busy(p_bth->daddr, p_bth->stream.acl_out.ep_addr)) {
 //
 //  }
