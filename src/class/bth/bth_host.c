@@ -290,7 +290,8 @@ bool bthh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t event, uint32
       const uint16_t acl_size = 4 + tu_le16toh( tu_unaligned_read16(p_bth->hci_acl_in_packet + 2) );
       // acl complete
       if (p_bth->hci_acl_in_offset > acl_size){
-          PRINTF("Extra HCI EVENT!\n");
+    	  TU_LOG_DRV("Extra HCI EVENT! (hci_acl_in_offset=%u, acl_size=%u\n", (unsigned) p_bth->hci_acl_in_offset, (unsigned) acl_size);
+          //printhex(0, p_bth->hci_acl_in_packet, p_bth->hci_acl_in_offset);
       }
       if (p_bth->hci_acl_in_offset >= acl_size){
       	if (tuh_bth_rx_acl_cb) tuh_bth_rx_acl_cb(idx, p_bth->hci_acl_in_packet, acl_size);
