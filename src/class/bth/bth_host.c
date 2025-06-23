@@ -211,7 +211,7 @@ bool tuh_bth_send_cmd(uint8_t idx, const uint8_t * packet, uint16_t len, tuh_xfe
 	return true;
 }
 
-bool tuh_bth_can_send_now(uint8_t idx) {
+bool tuh_bth_can_send_acl_now(uint8_t idx) {
 	bthh_interface_t * const p_bth = get_itf(idx);
 	TU_VERIFY(p_bth);
 //	return ! usbh_edpt_busy(p_bth->daddr, p_bth->stream.acl_out.ep_addr);
@@ -452,6 +452,19 @@ bool tuh_bth_send_acl(uint8_t idx, const uint8_t* packet, uint16_t len, tuh_xfer
 //  while (usbh_edpt_busy(p_bth->daddr, p_bth->stream.acl_out.ep_addr)) {
 //
 //  }
+}
+
+bool tuh_bth_send_sco(uint8_t idx, const uint8_t* packet, uint16_t len, tuh_xfer_cb_t complete_cb, uintptr_t arg)
+{
+//  bthh_interface_t* p_bth = get_itf(idx);
+//  TU_VERIFY(p_bth);
+//
+//  TU_ASSERT(! usbh_edpt_busy(p_bth->daddr, p_bth->stream.acl_out.ep_addr), false);
+//  return tu_edpt_stream_write(&p_bth->stream.acl_out, packet, len) != 0 && tu_edpt_stream_write_xfer(&p_bth->stream.acl_out) != 0;
+////  while (usbh_edpt_busy(p_bth->daddr, p_bth->stream.acl_out.ep_addr)) {
+////
+////  }
+	return true;
 }
 
 #endif

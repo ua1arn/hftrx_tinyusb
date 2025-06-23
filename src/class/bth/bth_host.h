@@ -45,8 +45,9 @@ typedef bool (*tuh_bth_complete_cb_t)(uint8_t dev_addr, tuh_bth_complete_data_t 
 // Write to bth interface
 // Read from bth interface
 bool tuh_bth_send_acl(uint8_t idx, const uint8_t* packet, uint16_t len, tuh_xfer_cb_t complete_cb, uintptr_t arg);
+bool tuh_bth_send_sco(uint8_t idx, const uint8_t* packet, uint16_t len, tuh_xfer_cb_t complete_cb, uintptr_t arg);
 bool tuh_bth_send_cmd(uint8_t idx, const uint8_t * packet, uint16_t len, tuh_xfer_cb_t complete_cb, uintptr_t arg);
-bool tuh_bth_can_send_now(uint8_t idx);
+bool tuh_bth_can_send_acl_now(uint8_t idx);
 //--------------------------------------------------------------------+
 // BTH APPLICATION CALLBACKS
 //--------------------------------------------------------------------+
@@ -60,6 +61,12 @@ TU_ATTR_WEAK extern void tuh_bth_umount_cb(uint8_t idx);
 
 // Invoked when received new data
 TU_ATTR_WEAK extern void tuh_bth_rx_acl_cb(uint8_t idx, uint8_t* buffer, uint16_t count);
+
+// Invoked when received new data
+TU_ATTR_WEAK extern void tuh_bth_rx_sco_cb(uint8_t idx, uint8_t* buffer, uint16_t count);
+
+// Invoked when a TX is complete and therefore space becomes available in TX buffer
+TU_ATTR_WEAK extern void tuh_bth_send_sco_cb(uint8_t idx);
 
 // Invoked when a TX is complete and therefore space becomes available in TX buffer
 TU_ATTR_WEAK extern void tuh_bth_send_acl_cb(uint8_t idx);
