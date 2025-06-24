@@ -35,7 +35,7 @@
 
 typedef struct {
 	uint8_t daddr;
-	uint8_t bInterfaceNumber;
+	uint8_t ControlbInterfaceNumber;
 	uint8_t bInterfaceSubClass;
 	uint8_t bInterfaceProtocol;
 
@@ -85,7 +85,7 @@ static bthh_interface_t* make_new_itf(uint8_t daddr, tusb_desc_interface_t const
       bthh_interface_t* const p_bth = &bthh_data[i];
 
       p_bth->daddr              = daddr;
-      p_bth->bInterfaceNumber   = itf_desc->bInterfaceNumber;
+      p_bth->ControlbInterfaceNumber   = itf_desc->bInterfaceNumber;
       p_bth->bInterfaceSubClass = itf_desc->bInterfaceSubClass;
       p_bth->bInterfaceProtocol = itf_desc->bInterfaceProtocol;
      // p_bth->line_state         = 0;
@@ -123,7 +123,7 @@ uint8_t tuh_bth_itf_get_index(uint8_t daddr, uint8_t itf_num) {
   {
     const bthh_interface_t* const p_bth = &bthh_data[i];
 
-    if (p_bth->daddr == daddr && p_bth->bInterfaceNumber == itf_num) return i;
+    if (p_bth->daddr == daddr && p_bth->ControlbInterfaceNumber == itf_num) return i;
   }
 
   return TUSB_INDEX_INVALID_8;
@@ -181,7 +181,7 @@ static bool bth_send_command(bthh_interface_t* p_bth, const uint8_t * packet, ui
 	},
 	.bRequest = 0x00,
 	.wValue   = 0,
-	.wIndex   = tu_htole16(p_bth->bInterfaceNumber),
+	.wIndex   = tu_htole16(p_bth->ControlbInterfaceNumber),
 	.wLength  = tu_htole16(len)
 	};
 
@@ -227,6 +227,7 @@ static void bthh_set_config_done(tuh_xfer_t* xfer0)
 
 	uint8_t const idx       = tuh_bth_itf_get_index(daddr, itf_num);
 	bthh_interface_t* p_bth = get_itf(idx);
+	TU_LOG_DRV("bthh_set_config_done: dev_addr=%u, itf_num=%u, idx=%u\r\n", xfer0->daddr, itf_num, idx);
 
 	// Prepare for incoming data
 	p_bth->hci_acl_in_offset = 0;
@@ -251,15 +252,99 @@ static void bthh_set_config_done(tuh_xfer_t* xfer0)
 	if (tuh_bth_mount_cb) tuh_bth_mount_cb(idx);
 }
 
-bool bthh_set_config(uint8_t dev_addr, uint8_t itf_num)
+/* Skip for strange BT dongle USB 1.1 vid=0A12h, pid=0x0001h, bcdDevice=8891h - Cambridge Silicon Radio, Ltd */
+static void bthh_stage_reset(tuh_xfer_t* xfer0)
+{
+	uint8_t const itf_num = 0;
+	uint8_t const idx = tuh_bth_itf_get_index(xfer0->daddr, itf_num);
+	TU_LOG_DRV("bthh_stage_reset: dev_addr=%u, itf_num=%u, idx=%u\r\n", xfer0->daddr, itf_num, idx);
+	bthh_set_config_done(xfer0);
+	//TU_ASSERT(bth_send_command(p_bth, cmd, sizeof cmd, bthh_set_config_done, 0), );		// RESET command
+}
+
+static void bthh_stage_sel_interface(tuh_xfer_t* xfer0)
+{
+	uint8_t const itf_num = 0;
+	uint8_t const idx = tuh_bth_itf_get_index(xfer0->daddr, itf_num);
+	TU_LOG_DRV("bthh_stage_sel_interface: dev_addr=%u, itf_num=%u, idx=%u\r\n", xfer0->daddr, itf_num, idx);
+	bthh_interface_t * const p_bth = get_itf(idx);
+
+	tusb_control_request_t const request = {
+	  .bmRequestType_bit = {
+		  .recipient = TUSB_REQ_RCPT_INTERFACE,
+		  .type      = TUSB_REQ_TYPE_STANDARD,
+		  .direction = TUSB_DIR_OUT
+	  },
+	  .bRequest = TUSB_REQ_SET_INTERFACE,
+	  .wValue   = 0,	// Switch Alt interface and reset state machine
+	  .wIndex   = itf_num,
+	  .wLength  = 0
+	};
+
+	tuh_xfer_t xfer = {
+	  .daddr       = p_bth->daddr,
+	  .ep_addr     = 0,
+	  .setup       = &request,
+	  .buffer      = NULL,
+	  .complete_cb = bthh_set_config_done,
+	  .user_data   = 0
+	};
+
+	tuh_control_xfer(&xfer);
+
+}
+
+bool bthh_set_config2(uint8_t dev_addr, uint8_t itf_num)
 {
 	uint8_t const idx = tuh_bth_itf_get_index(dev_addr, itf_num);
-	//TU_LOG_DRV("bthh_set_config: dev_addr=%u, itf_num=%u, idx=%u\r\n", dev_addr, itf_num, idx);
+	TU_LOG_DRV("bthh_set_config (send RESET): dev_addr=%u, itf_num=%u, idx=%u\r\n", dev_addr, itf_num, idx);
+	bthh_interface_t * const p_bth = get_itf(idx);
+	//TU_LOG_DRV("bthh_set_config: idx=%u\r\n", idx);
+	TU_ASSERT(bth_send_command(p_bth, NULL, 0, bthh_stage_sel_interface, 0), false);		// RESET command
+
+	return true;
+}
+
+bool bthh_set_config1(uint8_t dev_addr, uint8_t itf_num)
+{
+	uint8_t const idx = tuh_bth_itf_get_index(dev_addr, itf_num);
+	TU_LOG_DRV("bthh_set_config: dev_addr=%u, itf_num=%u, idx=%u\r\n", dev_addr, itf_num, idx);
 	bthh_interface_t * const p_bth = get_itf(idx);
 	//TU_LOG_DRV("bthh_set_config: idx=%u\r\n", idx);
 	TU_ASSERT(bth_send_command(p_bth, NULL, 0, bthh_set_config_done, 0), false);		// RESET command
 
 	return true;
+}
+
+
+bool bthh_set_config(uint8_t dev_addr, uint8_t itf_num)
+{
+	uint8_t const idx = tuh_bth_itf_get_index(dev_addr, itf_num);
+	TU_LOG_DRV("bthh_set_config: dev_addr=%u, itf_num=%u, idx=%u\r\n", dev_addr, itf_num, idx);
+	bthh_interface_t * const p_bth = get_itf(idx);
+
+	tusb_control_request_t const request = {
+	  .bmRequestType_bit = {
+		  .recipient = TUSB_REQ_RCPT_INTERFACE,
+		  .type      = TUSB_REQ_TYPE_STANDARD,
+		  .direction = TUSB_DIR_OUT
+	  },
+	  .bRequest = TUSB_REQ_SET_INTERFACE,
+	  .wValue   = 0,	// Switch Alt interface and reset state machine
+	  .wIndex   = itf_num,
+	  .wLength  = 0
+	};
+
+	tuh_xfer_t xfer = {
+	  .daddr       = p_bth->daddr,
+	  .ep_addr     = 0,
+	  .setup       = &request,
+	  .buffer      = NULL,
+	  .complete_cb = bthh_stage_reset,
+	  .user_data   = 0
+	};
+
+	return tuh_control_xfer(&xfer);
 }
 
 bool bthh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t event, uint32_t xferred_bytes) {
@@ -431,7 +516,7 @@ void bthh_close(uint8_t dev_addr)
 	      tu_edpt_stream_close(&p_bth->stream.acl_out);
 
 	      p_bth->daddr = 0;
-	      p_bth->bInterfaceNumber = 0;
+	      p_bth->ControlbInterfaceNumber = 0;
 	      p_bth->ep_notif = 0;
 	    }
 	  }
