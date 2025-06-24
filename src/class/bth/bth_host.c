@@ -173,6 +173,8 @@ static void bthh_internal_control_complete(tuh_xfer_t* xfer)
 static bool bth_send_command(bthh_interface_t* p_bth, const uint8_t * packet, uint16_t len, tuh_xfer_cb_t complete_cb, uintptr_t user_data) {
 	TU_LOG_DRV("BTH Send Command\r\n");
 
+	// BLUETOOTH CORE SPECIFICATION Version 6.1 | Vol 4, Part B Page 1744
+	// bmRequestType = 0x20 (Host-to-device class request, device as target)
 	tusb_control_request_t const request = {
 	.bmRequestType_bit = {
 	  .recipient = TUSB_REQ_RCPT_INTERFACE,
@@ -257,17 +259,18 @@ static void bthh_stage_reset(tuh_xfer_t* xfer0)
 {
 	uint8_t const itf_num = 0;
 	uint8_t const idx = tuh_bth_itf_get_index(xfer0->daddr, itf_num);
+	bthh_interface_t* p_bth = get_itf(idx);
 	TU_LOG_DRV("bthh_stage_reset: dev_addr=%u, itf_num=%u, idx=%u\r\n", xfer0->daddr, itf_num, idx);
-	bthh_set_config_done(xfer0);
-	//TU_ASSERT(bth_send_command(p_bth, cmd, sizeof cmd, bthh_set_config_done, 0), );		// RESET command
+	//bthh_set_config_done(xfer0);
+	TU_ASSERT(bth_send_command(p_bth, NULL, 0, bthh_set_config_done, 0), );		// RESET command
 }
 
 static void bthh_stage_sel_interface(tuh_xfer_t* xfer0)
 {
 	uint8_t const itf_num = 0;
 	uint8_t const idx = tuh_bth_itf_get_index(xfer0->daddr, itf_num);
-	TU_LOG_DRV("bthh_stage_sel_interface: dev_addr=%u, itf_num=%u, idx=%u\r\n", xfer0->daddr, itf_num, idx);
 	bthh_interface_t * const p_bth = get_itf(idx);
+	TU_LOG_DRV("bthh_stage_sel_interface: dev_addr=%u, itf_num=%u, idx=%u\r\n", xfer0->daddr, itf_num, idx);
 
 	tusb_control_request_t const request = {
 	  .bmRequestType_bit = {
