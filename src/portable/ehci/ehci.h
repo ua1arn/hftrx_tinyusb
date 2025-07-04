@@ -164,8 +164,8 @@ typedef struct TU_ATTR_ALIGNED(32) {
 
   // Attached TD management, note usbh will only queue 1 TD per QHD.
   // buffer for dcache invalidate since td's buffer is modified by HC and finding initial buffer address is not trivial
-  uint32_t attached_buffer;
-  ehci_qtd_t *volatile attached_qtd;
+  uintptr_t attached_buffer;
+  uintptr_t attached_qtd;
 } ehci_qhd_t;
 TU_VERIFY_STATIC( sizeof(ehci_qhd_t) == 64, "size is not correct" );
 

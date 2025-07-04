@@ -36,7 +36,7 @@
 //--------------------------------------------------------------------+
 
 // Initialize EHCI driver
-bool ehci_init(uint8_t rhport, uint32_t capability_reg, uint32_t operatial_reg);
+bool ehci_init(uint8_t rhport, uintptr_t capability_reg, uintptr_t operatial_reg);
 
 #ifdef __cplusplus
  }
