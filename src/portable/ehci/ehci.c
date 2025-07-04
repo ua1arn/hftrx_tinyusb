@@ -236,7 +236,11 @@ bool hcd_port_connect_status(uint8_t rhport) {
 
 tusb_speed_t hcd_port_speed_get(uint8_t rhport) {
   (void) rhport;
+#if (CFG_TUSB_MCU == OPT_MCU_F1C100S)
+  return TUSB_SPEED_HIGH;	// STD EHCI: HS only
+#else
   return (tusb_speed_t) ehci_data.regs->portsc_bm.nxp_port_speed; // NXP specific port speed
+#endif
 }
 
 // Close all opened endpoint belong to this device
@@ -348,6 +352,7 @@ bool ehci_init(uint8_t rhport, uint32_t capability_reg, uint32_t operatial_reg)
                    FRAMELIST_SIZE_USBCMD_VALUE;
 
   //------------- ConfigFlag Register (skip) -------------//
+  regs->config_flag = 1;
 
   // enable port power bit in portsc. The function of this bit depends on the value of the Port
   // Power Control (PPC) field in the HCSPARAMS register.
