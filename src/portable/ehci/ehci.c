@@ -73,7 +73,7 @@ typedef struct {
   // TODO only implement 1 ms & 2 ms & 4 ms, 8 ms (framelist)
   // [0] : 1ms, [1] : 2ms, [2] : 4ms, [3] : 8 ms
   // TODO better implementation without dummy head to save SRAM
-  ehci_qhd_t period_head_arr[4];
+  ehci_qhd_t period_head_arr[11];
 
   // Note control qhd of dev0 is used as head of async list
   struct {
