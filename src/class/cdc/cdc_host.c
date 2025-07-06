@@ -622,7 +622,7 @@ bool tuh_cdc_set_line_coding(uint8_t idx, cdc_line_coding_t const* line_coding, 
 //--------------------------------------------------------------------+
 
 bool cdch_init(void) {
-  TU_LOG_DRV("sizeof(cdch_interface_t) = %u\r\n", sizeof(cdch_interface_t));
+  TU_LOG_DRV("sizeof(cdch_interface_t) = %u\r\n", (unsigned) sizeof(cdch_interface_t));
   tu_memclr(cdch_data, sizeof(cdch_data));
   for (size_t i = 0; i < CFG_TUH_CDC; i++) {
     cdch_interface_t* p_cdc = &cdch_data[i];
