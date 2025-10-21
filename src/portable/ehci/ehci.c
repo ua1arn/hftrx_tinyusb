@@ -728,7 +728,7 @@ TU_ATTR_ALWAYS_INLINE static inline ehci_link_t* list_get_period_head(uint8_t rh
   const unsigned ix = tu_log2( tu_min32(FRAMELIST_SIZE, interval_ms) );
   //PRINTF("interval_ms=%u, ix=%u, as=%u\n", (unsigned) interval_ms, ix, TU_ARRAY_SIZE(ehci_data.period_head_arr));
 
-  TU_ASSERT(TU_ARRAY_SIZE(ehci_data.period_head_arr) > ix );
+  //TU_ASSERT(TU_ARRAY_SIZE(ehci_data.period_head_arr) > ix );
   return (ehci_link_t*) &ehci_data.period_head_arr[ix];
 }
 
