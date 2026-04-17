@@ -754,7 +754,8 @@ static void list_remove_qhd_by_daddr(ehci_link_t* list_head, uint8_t dev_addr) {
 
   while (prev && !prev->terminate) {
     ehci_qhd_t* qhd = (ehci_qhd_t*) (uintptr_t) list_next(prev);
-
+    if (qhd == NULL)
+    	break;		// FIXME: замазал падение при удалении устройства
     // done if loop back to head
     if ( (uintptr_t) qhd == (uintptr_t) list_head) {
       break;
